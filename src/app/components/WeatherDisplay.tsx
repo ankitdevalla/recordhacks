@@ -57,6 +57,14 @@ export default function WeatherDisplay() {
           <p className="text-sm text-gray-600 mb-1">Temperature</p>
           <p className="text-lg font-medium text-gray-900">{weather.temperature}°C</p>
         </div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-sm text-gray-600 mb-1">Sunrise</p>
+          <p className="text-lg font-medium text-gray-900">{weather.sunrise}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-4">
+          <p className="text-sm text-gray-600 mb-1">Sunset</p>
+          <p className="text-lg font-medium text-gray-900">{weather.sunset}</p>
+        </div>
         <div className="bg-gray-50 rounded-lg p-4 col-span-2">
           <p className="text-sm text-gray-600 mb-1">Condition</p>
           <p className="text-lg font-medium text-gray-900">{weather.condition}</p>

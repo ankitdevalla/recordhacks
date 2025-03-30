@@ -1,7 +1,7 @@
 export interface UserMood {
   text: string;
   timestamp: Date;
-  genres?: string[];
+  genres: string[];
   duration?: number; // Duration in minutes
 }
 
@@ -9,6 +9,8 @@ export interface WeatherData {
   temperature: number;
   condition: string;
   location: string;
+  sunrise: string;
+  sunset: string;
 }
 
 export interface CalendarBusyness {
@@ -18,11 +20,7 @@ export interface CalendarBusyness {
 }
 
 export interface SpotifyRecommendation {
-  tracks: Array<{
-    name: string;
-    artist: string;
-    uri: string;
-  }>;
+  tracks: SpotifyTrack[];
   playlistId?: string;
 }
 

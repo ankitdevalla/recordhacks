@@ -1,5 +1,10 @@
 import { WeatherData } from '../types';
 
+function formatTime(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export async function getCurrentWeather(lat: number, lon: number): Promise<WeatherData> {
   const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
   console.log('API Key available:', !!API_KEY); // Debug log
@@ -32,6 +37,8 @@ export async function getCurrentWeather(lat: number, lon: number): Promise<Weath
     temperature: Math.round(data.main.temp),
     condition: data.weather[0].main,
     location: data.name,
+    sunrise: formatTime(data.sys.sunrise),
+    sunset: formatTime(data.sys.sunset)
   };
 }
 
