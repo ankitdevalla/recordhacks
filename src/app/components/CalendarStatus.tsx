@@ -79,7 +79,7 @@ export default function CalendarStatus() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div className="bg-white rounded-xl shadow-lg p-6 h-full flex flex-col">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Calendar Status</h2>
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-gray-50 rounded-lg p-4">
@@ -99,6 +99,8 @@ export default function CalendarStatus() {
           </p>
         </div>
       </div>
+      {/* Empty space to align with playlist duration component */}
+      <div className="flex-grow mt-6"></div>
     </div>
   );
 } 

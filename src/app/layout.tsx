@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mood Music Generator",
-  description: "Get personalized music recommendations based on your mood, weather, and schedule",
+  title: "WaveLength",
+  description:
+    "Get personalized music recommendations based on your mood, weather, and schedule",
 };
 
 export default function RootLayout({
@@ -25,7 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script src="https://accounts.google.com/gsi/client" async defer></script>
+        <script
+          src="https://accounts.google.com/gsi/client"
+          async
+          defer
+        ></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

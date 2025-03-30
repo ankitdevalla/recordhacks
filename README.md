@@ -1,4 +1,4 @@
-# Mood Music Generator
+# WaveLength
 
 A personalized music recommendation app that creates playlists based on your current mood, weather conditions, and schedule. Built with Next.js, TypeScript, and Tailwind CSS.
 
@@ -7,7 +7,7 @@ A personalized music recommendation app that creates playlists based on your cur
 - **Mood-Based Music Selection**: Choose from a variety of moods (Happy, Sad, Energetic, etc.) to influence your playlist
 - **Genre Preferences**: Select multiple genres to fine-tune your music recommendations
 - **Smart Duration Control**: Set your desired playlist length from 30 minutes to 3 hours
-- **Contextual Awareness**: 
+- **Contextual Awareness**:
   - Weather integration to adjust music based on current conditions
   - Calendar integration to consider your schedule and time of day
 - **Personal Notes**: Add additional comments to provide more context for your playlist generation
@@ -21,22 +21,26 @@ A personalized music recommendation app that creates playlists based on your cur
   - Spotify API for music recommendations
   - OpenWeatherMap API for weather data
   - Google Calendar API for schedule integration
+  - OpenAI for mood analysis
 
 ## Getting Started
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/mood-music.git
 cd mood-music
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Set up environment variables:
-Create a `.env.local` file in the root directory with the following variables:
+   Create a `.env.local` file in the root directory with the following variables:
+
 ```env
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
@@ -45,6 +49,7 @@ GOOGLE_CALENDAR_CLIENT_ID=your_google_client_id
 ```
 
 4. Run the development server:
+
 ```bash
 npm run dev
 ```

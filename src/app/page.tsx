@@ -1,22 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import MoodInput from './components/MoodInput';
-import WeatherDisplay from './components/WeatherDisplay';
-import CalendarStatus from './components/CalendarStatus';
-import PlaylistRecommendation from './components/PlaylistRecommendation';
-import TestPlaylist from './components/TestPlaylist';
-import AnimatedBackground from './components/AnimatedBackground';
-import { UserMood, WeatherData, CalendarBusyness } from './types';
-import { getMoodStyle } from './utils/moodStyles';
+import { useState } from "react";
+import MoodInput from "./components/MoodInput";
+import WeatherDisplay from "./components/WeatherDisplay";
+import CalendarStatus from "./components/CalendarStatus";
+import PlaylistRecommendation from "./components/PlaylistRecommendation";
+import TestPlaylist from "./components/TestPlaylist";
+import AnimatedBackground from "./components/AnimatedBackground";
+import { UserMood, WeatherData, CalendarBusyness } from "./types";
+import { getMoodStyle } from "./utils/moodStyles";
 
 export default function Home() {
   const [moodData, setMoodData] = useState<UserMood | null>(null);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [calendarData, setCalendarData] = useState<CalendarBusyness | null>(null);
+  const [calendarData, setCalendarData] = useState<CalendarBusyness | null>(
+    null
+  );
   const [duration, setDuration] = useState(30);
-  const [comments, setComments] = useState('');
-  const [selectedMood, setSelectedMood] = useState('');
+  const [comments, setComments] = useState("");
+  const [selectedMood, setSelectedMood] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
   const currentMoodStyle = getMoodStyle(selectedMood);
@@ -28,16 +30,18 @@ export default function Home() {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     if (remainingMinutes === 0) {
-      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
     }
-    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${remainingMinutes} minutes`;
+    return `${hours} ${
+      hours === 1 ? "hour" : "hours"
+    } ${remainingMinutes} minutes`;
   };
 
   const handleMoodSubmit = (mood: UserMood) => {
     setMoodData({
       ...mood,
       duration,
-      text: comments ? `${mood.text} - ${comments}` : mood.text
+      text: comments ? `${mood.text} - ${comments}` : mood.text,
     });
   };
 
@@ -45,7 +49,7 @@ export default function Home() {
     const newDuration = Number(e.target.value);
     setDuration(newDuration);
     if (moodData) {
-      setMoodData(prev => prev ? {...prev, duration: newDuration} : null);
+      setMoodData((prev) => (prev ? { ...prev, duration: newDuration } : null));
     }
   };
 
@@ -53,30 +57,41 @@ export default function Home() {
     const newComments = e.target.value;
     setComments(newComments);
     if (moodData) {
-      const baseMood = moodData.text.split('-')[0];
-      setMoodData(prev => prev ? {...prev, text: newComments ? `${baseMood} - ${newComments}` : baseMood} : null);
+      const baseMood = moodData.text.split("-")[0];
+      setMoodData((prev) =>
+        prev
+          ? {
+              ...prev,
+              text: newComments ? `${baseMood} - ${newComments}` : baseMood,
+            }
+          : null
+      );
     }
   };
 
   const handleSubmit = () => {
     if (!selectedMood) return;
-    
+
     handleMoodSubmit({
       text: selectedMood,
       genres: selectedGenres,
       timestamp: new Date(),
-      duration
+      duration,
     });
   };
 
   return (
     <>
       <AnimatedBackground mood={selectedMood} />
-      <main className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${currentMoodStyle.gradient}`}>
+      <main
+        className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${currentMoodStyle.gradient}`}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className={`text-4xl font-bold mb-4 ${currentMoodStyle.textColor}`}>
-              Mood Music Generator
+            <h1
+              className={`text-4xl font-bold mb-4 ${currentMoodStyle.textColor}`}
+            >
+              WaveLength
             </h1>
           </div>
 
@@ -84,7 +99,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Mood Input */}
             <div>
-              <MoodInput 
+              <MoodInput
                 onMoodSubmit={handleMoodSubmit}
                 onMoodChange={setSelectedMood}
                 onGenresChange={setSelectedGenres}
@@ -103,7 +118,9 @@ export default function Home() {
             <div>
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 space-y-6">
                 <div>
-                  <label className={`block text-lg font-semibold mb-2 ${currentMoodStyle.textColor}`}>
+                  <label
+                    className={`block text-lg font-semibold mb-2 ${currentMoodStyle.textColor}`}
+                  >
                     Playlist Duration: {formatDuration(duration)}
                   </label>
                   <input
@@ -122,7 +139,9 @@ export default function Home() {
                 </div>
 
                 <div>
-                  <label className={`block text-lg font-semibold mb-2 ${currentMoodStyle.textColor}`}>
+                  <label
+                    className={`block text-lg font-semibold mb-2 ${currentMoodStyle.textColor}`}
+                  >
                     Additional Comments
                   </label>
                   <textarea
@@ -133,14 +152,6 @@ export default function Home() {
                     placeholder="Tell us more about how you're feeling..."
                   />
                 </div>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={!selectedMood}
-                  className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white ${currentMoodStyle.accentColor} hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  Generate Playlist
-                </button>
               </div>
             </div>
 
@@ -148,6 +159,17 @@ export default function Home() {
             <div>
               <CalendarStatus />
             </div>
+          </div>
+
+          {/* Submit Button - Full Width */}
+          <div className="mt-8">
+            <button
+              onClick={handleSubmit}
+              disabled={!selectedMood}
+              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white ${currentMoodStyle.accentColor} hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              Generate Playlist
+            </button>
           </div>
 
           {/* Playlist Recommendation - Full Width */}
