@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { UserMood } from '../types';
+import { getMoodStyle } from '../utils/moodStyles';
 
 interface MoodInputProps {
   onMoodSubmit: (mood: UserMood) => void;
@@ -12,6 +13,8 @@ interface MoodInputProps {
 export default function MoodInput({ onMoodSubmit, onMoodChange, onGenresChange }: MoodInputProps) {
   const [mood, setMood] = useState('');
   const [genres, setGenres] = useState<string[]>([]);
+
+  const currentMoodStyle = getMoodStyle(mood);
 
   useEffect(() => {
     onMoodChange(mood);
@@ -42,18 +45,18 @@ export default function MoodInput({ onMoodSubmit, onMoodChange, onGenresChange }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">How are you feeling?</h2>
+    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6">
+      <h2 className={`text-xl font-semibold mb-6 ${currentMoodStyle.textColor}`}>How are you feeling?</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${currentMoodStyle.textColor}`}>
             Select your mood
           </label>
           <select
             value={mood}
             onChange={(e) => setMood(e.target.value)}
-            className="mt-1 block w-full rounded-lg border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-base text-gray-900 bg-white p-3"
+            className="mt-1 block w-full rounded-lg border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-base text-gray-900 bg-white/90 p-3"
             required
           >
             <option value="">Choose a mood...</option>
@@ -76,7 +79,7 @@ export default function MoodInput({ onMoodSubmit, onMoodChange, onGenresChange }
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${currentMoodStyle.textColor}`}>
             Select your preferred genres
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -87,7 +90,7 @@ export default function MoodInput({ onMoodSubmit, onMoodChange, onGenresChange }
                 onClick={() => handleGenreToggle(genre)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   genres.includes(genre)
-                    ? 'bg-indigo-600 text-white'
+                    ? `${currentMoodStyle.accentColor} text-white`
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
