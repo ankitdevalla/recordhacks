@@ -191,7 +191,7 @@ function getMoodGenres(mood: string, selectedGenres?: string[]): string {
     return selectedGenres.join(',');
   }
 
-  return moodMap[mood.toLowerCase()] || 'pop';
+  return moodMap[mood.toLowerCase()];
 }
 
 function getEnergyLevel(isBusy: boolean, weather: string): number {
@@ -280,6 +280,7 @@ interface SpotifyAudioFeatures {
   danceability: number;
   acousticness: number;
   speechiness: number;
+  tempo: number;
 }
 
 // Update the transform function
@@ -293,7 +294,58 @@ function transformTrackData(track: SpotifyTrack): AppSpotifyTrack {
   };
 }
 
-export async function getSpotifyRecommendations(mood: string, genres: string[], duration: number = 30): Promise<SpotifyRecommendation> {
+interface SpotifyRecommendationParams {
+  featureRanges: {
+    valence: [number, number];
+    energy: [number, number];
+    tempo: [number, number];
+    acousticness: [number, number];
+    genres: string[];
+  };
+  limit?: number;
+}
+
+// Helper: Fetch audio features for a list of track IDs
+async function fetchAudioFeatures(trackIds: string[], token: string): Promise<SpotifyAudioFeatures[]> {
+  const chunkSize = 50;
+  let features: SpotifyAudioFeatures[] = [];
+  for (let i = 0; i < trackIds.length; i += chunkSize) {
+    const chunk = trackIds.slice(i, i + chunkSize);
+    const params = new URLSearchParams();
+    params.append('ids', chunk.join(','));
+    const url = `${SPOTIFY_API_BASE}/audio-features?${params.toString()}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      features = features.concat(data.audio_features);
+    } else {
+      console.error('Failed to fetch audio features');
+    }
+  }
+  return features;
+}
+
+// Map UI genres to Spotify's genre taxonomy
+const genreMap: Record<string, string[]> = {
+  'Pop': ['pop', 'dance-pop', 'power-pop'],
+  'Rock': ['rock', 'alternative', 'hard-rock'],
+  'Hip Hop': ['hip-hop', 'rap', 'trap'],
+  'Jazz': ['jazz', 'jazz-funk', 'bebop'],
+  'Classical': ['classical', 'orchestra', 'opera'],
+  'Electronic': ['electronic', 'edm', 'house'],
+  'R&B': ['r-n-b', 'soul', 'funk'],
+  'Country': ['country', 'folk', 'americana']
+};
+
+export async function getSpotifyRecommendations({ 
+  featureRanges,
+  limit = 10
+}: SpotifyRecommendationParams): Promise<SpotifyRecommendation> {
   try {
     if (!accessToken) {
       console.log('No access token found, initiating login...');
@@ -306,136 +358,112 @@ export async function getSpotifyRecommendations(mood: string, genres: string[], 
       throw new Error('No valid access token');
     }
 
-    console.log('Getting tracks for:', { mood, genres, duration });
+    console.log('Getting tracks with feature ranges:', featureRanges);
 
-    // Search for tracks from each genre and combine results
-    let allTracks: SpotifyTrack[] = [];
-    const tracksPerGenre = Math.ceil(50 / genres.length); // Distribute our 50-track limit across genres
+    // Step 1: Build search query with genre filters
+    const params = new URLSearchParams();
+    params.append('type', 'track');
+    params.append('limit', '50');
+    params.append('market', 'US');
 
-    for (const genre of genres) {
-      console.log(`Searching for genre: ${genre}`);
-      const searchQuery = `genre:${genre.toLowerCase()}`;
+    // Map selected genres to Spotify's taxonomy
+    const selectedGenre = featureRanges.genres[0] || 'Pop';
+    const spotifyGenres = genreMap[selectedGenre] || ['pop'];
+
+    // Calculate energy level
+    const avgEnergy = (featureRanges.energy[0] + featureRanges.energy[1]) / 2;
+
+    // Build mood keywords based on energy and valence
+    const avgValence = (featureRanges.valence[0] + featureRanges.valence[1]) / 2;
+    let moodKeywords: string[] = [];
+    
+    if (avgEnergy > 0.7 && avgValence > 0.7) {
+      moodKeywords = ['upbeat', 'energetic'];
+    } else if (avgEnergy > 0.7 && avgValence < 0.3) {
+      moodKeywords = ['intense', 'powerful'];
+    } else if (avgEnergy < 0.3 && avgValence > 0.7) {
+      moodKeywords = ['peaceful', 'gentle'];
+    } else if (avgEnergy < 0.3 && avgValence < 0.3) {
+      moodKeywords = ['melancholic', 'ambient'];
+    }
+
+    // Construct search query using genre:genre-name filter
+    const genreFilters = spotifyGenres.map(g => `genre:${g}`).join(' OR ');
+    const searchQuery = `(${genreFilters}) ${moodKeywords.join(' ')}`;
+    params.append('q', searchQuery);
+
+    const url = `${SPOTIFY_API_BASE}/search?${params.toString()}`;
+    console.log('Search URL:', url);
+
+    const searchResponse = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      console.error('Search error:', errorText);
+      throw new Error('Failed to search tracks');
+    }
+
+    const searchData: SpotifySearchResult = await searchResponse.json();
+    let tracks = searchData.tracks.items;
+
+    if (tracks.length === 0) {
+      // Fallback: Try with just the first Spotify genre
+      const fallbackQuery = `genre:${spotifyGenres[0]}`;
+      params.set('q', fallbackQuery);
+      const retryUrl = `${SPOTIFY_API_BASE}/search?${params.toString()}`;
       
-      const searchResponse = await fetch(
-        `${SPOTIFY_API_BASE}/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=${tracksPerGenre}&market=US`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+      const retryResponse = await fetch(retryUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      );
-
-      if (!searchResponse.ok) {
-        console.error(`Search error for genre ${genre}:`, await searchResponse.text());
-        continue; // Skip this genre if search fails, but continue with others
+      });
+      
+      if (retryResponse.ok) {
+        const retryData: SpotifySearchResult = await retryResponse.json();
+        tracks = retryData.tracks.items;
       }
-
-      const searchData: SpotifySearchResult = await searchResponse.json();
-      allTracks = [...allTracks, ...searchData.tracks.items];
     }
 
-    // Remove duplicates (in case some tracks appear in multiple genres)
-    allTracks = allTracks.filter((track, index, self) =>
-      index === self.findIndex((t) => t.id === track.id)
-    );
+    console.log(`Found ${tracks.length} tracks`);
 
-    console.log(`Found ${allTracks.length} unique tracks from all genres`);
-
-    try {
-      // Get audio features for all tracks
-      const trackIds = allTracks.map(track => track.id).join(',');
-      const featuresResponse = await fetch(
-        `${SPOTIFY_API_BASE}/audio-features?ids=${trackIds}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (featuresResponse.ok) {
-        const featuresData = await featuresResponse.json();
-        const audioFeatures: SpotifyAudioFeatures[] = featuresData.audio_features;
-
-        // Score tracks based on audio features and mood
-        allTracks = allTracks
-          .map((track, index) => {
-            const features = audioFeatures[index];
-            if (!features) return { track, score: track.popularity / 100 };
-
-            let score = track.popularity / 100; // Base score on popularity (0-1)
-            
-            // Add mood-based scoring
-            switch(mood.toLowerCase()) {
-              case 'happy':
-              case 'energetic':
-                score += features.energy * 0.4;      // High energy
-                score += features.valence * 0.4;     // High positivity
-                score += features.danceability * 0.2; // Somewhat danceable
-                break;
-              case 'calm':
-              case 'relaxed':
-                score += (1 - features.energy) * 0.4;    // Low energy
-                score += (features.valence * 0.5) * 0.4; // Moderate positivity
-                score += (1 - features.danceability) * 0.2; // Less danceable
-                break;
-              case 'sad':
-              case 'melancholic':
-                score += (1 - features.valence) * 0.4;   // Low positivity
-                score += (1 - features.energy) * 0.4;    // Low energy
-                score += features.acousticness * 0.2;    // Prefer acoustic
-                break;
-              case 'focused':
-              case 'productive':
-                score += (features.energy * 0.7) * 0.4;  // Moderate energy
-                score += (1 - features.danceability) * 0.4; // Less danceable
-                score += (1 - features.speechiness) * 0.2;  // Less lyrics
-                break;
-              default:
-                // For unknown moods, just use popularity and energy as baseline
-                score += features.energy * 0.5;
-            }
-
-            return { track, score };
-          })
-          .sort((a, b) => b.score - a.score)
-          .map(item => item.track);
-      } else {
-        console.log('Could not get audio features, falling back to popularity-based selection');
-        // If we can't get audio features, sort by popularity and randomize a bit
-        allTracks = allTracks
-          .sort((a, b) => b.popularity - a.popularity)
-          .slice(0, Math.min(20, allTracks.length)) // Take top 20 by popularity
-          .sort(() => Math.random() - 0.5); // Shuffle them
-      }
-    } catch (error) {
-      console.error('Error getting audio features:', error);
-      // Fallback to popularity-based sorting with some randomization
-      allTracks = allTracks
-        .sort((a, b) => b.popularity - a.popularity)
-        .slice(0, Math.min(20, allTracks.length))
-        .sort(() => Math.random() - 0.5);
-    }
-
-    // Take top 10 tracks
-    const selectedTracks = allTracks
-      .slice(0, 10)
-      .map(track => transformTrackData(track));
-
-    console.log(`Selected ${selectedTracks.length} tracks based on available criteria`);
+    // Sort tracks with randomization for variety
+    const sortedTracks = tracks
+      .sort((a: SpotifyTrack, b: SpotifyTrack) => {
+        const randomFactor = Math.random() * 20 - 10;
+        return (b.popularity + randomFactor) - (a.popularity + randomFactor);
+      })
+      .slice(0, limit)
+      .map(transformTrackData);
 
     return {
-      tracks: selectedTracks
+      tracks: sortedTracks
     };
+
   } catch (error) {
     console.error('Spotify API Error:', error);
     throw error;
   }
 }
 
-export async function createSpotifyPlaylist(tracks: AppSpotifyTrack[], mood: string, duration: number): Promise<string> {
+interface SpotifyPlaylistResponse {
+  playlistId: string;
+}
+
+export async function createSpotifyPlaylist(
+  tracks: AppSpotifyTrack[],
+  name: string,
+  description?: string
+): Promise<SpotifyPlaylistResponse> {
   if (!accessToken) {
-    throw new Error('Not authenticated with Spotify');
+    console.log('No access token found, initiating login...');
+    initiateSpotifyLogin();
+    throw new Error('Please log in to Spotify');
   }
 
   const token = await getValidAccessToken();
@@ -444,10 +472,11 @@ export async function createSpotifyPlaylist(tracks: AppSpotifyTrack[], mood: str
   }
 
   try {
-    // First, get the user's ID
+    // Get the current user's ID
     const userResponse = await fetch(`${SPOTIFY_API_BASE}/me`, {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       }
     });
 
@@ -459,43 +488,51 @@ export async function createSpotifyPlaylist(tracks: AppSpotifyTrack[], mood: str
     const userId = userData.id;
 
     // Create a new playlist
-    const playlistResponse = await fetch(`${SPOTIFY_API_BASE}/users/${userId}/playlists`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        name: `${mood} Mood - ${duration} Minutes`,
-        description: `Generated by Mood Music - ${new Date().toLocaleDateString()}`,
-        public: false
-      })
-    });
+    const date = new Date().toLocaleDateString();
+    const playlistResponse = await fetch(
+      `${SPOTIFY_API_BASE}/users/${userId}/playlists`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          description: description || `Generated on ${date}`,
+          public: false
+        })
+      }
+    );
 
     if (!playlistResponse.ok) {
       throw new Error('Failed to create playlist');
     }
 
     const playlist = await playlistResponse.json();
+    const playlistId = playlist.id;
 
     // Add tracks to the playlist
     const trackUris = tracks.map(track => track.uri);
-    const addTracksResponse = await fetch(`${SPOTIFY_API_BASE}/playlists/${playlist.id}/tracks`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        uris: trackUris
-      })
-    });
+    const addTracksResponse = await fetch(
+      `${SPOTIFY_API_BASE}/playlists/${playlistId}/tracks`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          uris: trackUris
+        })
+      }
+    );
 
     if (!addTracksResponse.ok) {
       throw new Error('Failed to add tracks to playlist');
     }
 
-    return playlist.id;
+    return { playlistId };
   } catch (error) {
     console.error('Error creating playlist:', error);
     throw error;
