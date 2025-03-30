@@ -72,20 +72,18 @@ export default function Home() {
   return (
     <>
       <AnimatedBackground mood={selectedMood} />
-      <main className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500`}>
+      <main className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${currentMoodStyle.gradient}`}>
         <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <h1 className={`text-4xl font-bold mb-8 ${currentMoodStyle.textColor}`}>
+          <div className="text-center mb-12">
+            <h1 className={`text-4xl font-bold mb-4 ${currentMoodStyle.textColor}`}>
               Mood Music Generator
             </h1>
-            <p className={`text-lg mb-12 ${currentMoodStyle.textColor}`}>
-              Get personalized music recommendations based on your mood, weather, and schedule
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Mood Input */}
-            <div className="lg:col-span-1">
+          {/* Top Row - Mood and Weather */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Mood Input */}
+            <div>
               <MoodInput 
                 onMoodSubmit={handleMoodSubmit}
                 onMoodChange={setSelectedMood}
@@ -93,14 +91,16 @@ export default function Home() {
               />
             </div>
 
-            {/* Middle Column - Weather and Calendar */}
-            <div className="lg:col-span-1 space-y-8">
+            {/* Weather Display */}
+            <div>
               <WeatherDisplay />
-              <CalendarStatus />
             </div>
+          </div>
 
-            {/* Right Column - Duration and Comments */}
-            <div className="lg:col-span-1">
+          {/* Bottom Row - Duration and Calendar */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Duration and Comments */}
+            <div>
               <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg p-6 space-y-6">
                 <div>
                   <label className={`block text-lg font-semibold mb-2 ${currentMoodStyle.textColor}`}>
@@ -139,9 +139,14 @@ export default function Home() {
                   disabled={!selectedMood}
                   className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white ${currentMoodStyle.accentColor} hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  Submit Choices
+                  Generate Playlist
                 </button>
               </div>
+            </div>
+
+            {/* Calendar Status */}
+            <div>
+              <CalendarStatus />
             </div>
           </div>
 
@@ -153,8 +158,6 @@ export default function Home() {
               calendar={calendarData}
             />
           </div>
-
-          <TestPlaylist />
         </div>
       </main>
     </>
