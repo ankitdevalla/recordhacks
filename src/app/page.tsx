@@ -1,103 +1,152 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import MoodInput from './components/MoodInput';
+import WeatherDisplay from './components/WeatherDisplay';
+import CalendarStatus from './components/CalendarStatus';
+import PlaylistRecommendation from './components/PlaylistRecommendation';
+import { UserMood, WeatherData, CalendarBusyness } from './types';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [moodData, setMoodData] = useState<UserMood | null>(null);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [calendarData, setCalendarData] = useState<CalendarBusyness | null>(null);
+  const [duration, setDuration] = useState(30);
+  const [comments, setComments] = useState('');
+  const [selectedMood, setSelectedMood] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const formatDuration = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${minutes} minutes`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} ${remainingMinutes} minutes`;
+  };
+
+  const handleMoodSubmit = (mood: UserMood) => {
+    setMoodData({
+      ...mood,
+      duration,
+      text: comments ? `${mood.text} - ${comments}` : mood.text
+    });
+  };
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDuration = Number(e.target.value);
+    setDuration(newDuration);
+    if (moodData) {
+      setMoodData(prev => prev ? {...prev, duration: newDuration} : null);
+    }
+  };
+
+  const handleCommentsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newComments = e.target.value;
+    setComments(newComments);
+    if (moodData) {
+      const baseMood = moodData.text.split('-')[0];
+      setMoodData(prev => prev ? {...prev, text: newComments ? `${baseMood} - ${newComments}` : baseMood} : null);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!selectedMood) return;
+    
+    handleMoodSubmit({
+      text: selectedMood,
+      genres: selectedGenres,
+      timestamp: new Date(),
+      duration
+    });
+  };
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">
+            Mood Music Generator
+          </h1>
+          <p className="text-lg text-gray-600 mb-12">
+            Get personalized music recommendations based on your mood, weather, and schedule
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Mood Input */}
+          <div className="lg:col-span-1">
+            <MoodInput 
+              onMoodSubmit={handleMoodSubmit}
+              onMoodChange={setSelectedMood}
+              onGenresChange={setSelectedGenres}
+            />
+          </div>
+
+          {/* Middle Column - Weather and Calendar */}
+          <div className="lg:col-span-1 space-y-8">
+            <WeatherDisplay />
+            <CalendarStatus />
+          </div>
+
+          {/* Right Column - Duration and Comments */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+              <div>
+                <label className="block text-lg font-semibold text-gray-900 mb-2">
+                  Playlist Duration: {formatDuration(duration)}
+                </label>
+                <input
+                  type="range"
+                  min="30"
+                  max="180"
+                  step="15"
+                  value={duration}
+                  onChange={handleDurationChange}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                />
+                <div className="flex justify-between text-sm text-gray-600 mt-1">
+                  <span>30 min</span>
+                  <span>3 hours</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-lg font-semibold text-gray-900 mb-2">
+                  Additional Comments
+                </label>
+                <textarea
+                  value={comments}
+                  onChange={handleCommentsChange}
+                  className="mt-1 block w-full rounded-lg border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-base text-gray-900 bg-white p-3"
+                  rows={4}
+                  placeholder="Tell us more about how you're feeling..."
+                />
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                disabled={!selectedMood}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit Choices
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Playlist Recommendation - Full Width */}
+        <div className="mt-12">
+          <PlaylistRecommendation
+            mood={moodData}
+            weather={weatherData}
+            calendar={calendarData}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }
