@@ -5,6 +5,7 @@ import MoodInput from './components/MoodInput';
 import WeatherDisplay from './components/WeatherDisplay';
 import CalendarStatus from './components/CalendarStatus';
 import PlaylistRecommendation from './components/PlaylistRecommendation';
+import TestPlaylist from './components/TestPlaylist';
 import AnimatedBackground from './components/AnimatedBackground';
 import { UserMood, WeatherData, CalendarBusyness } from './types';
 import { getMoodStyle } from './utils/moodStyles';
@@ -152,6 +153,8 @@ export default function Home() {
               calendar={calendarData}
             />
           </div>
+
+          <TestPlaylist />
         </div>
       </main>
     </>

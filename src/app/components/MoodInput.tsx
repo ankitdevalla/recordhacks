@@ -32,8 +32,7 @@ export default function MoodInput({ onMoodSubmit, onMoodChange, onGenresChange }
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!mood) return;
     
     onMoodSubmit({

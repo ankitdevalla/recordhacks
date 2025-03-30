@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SpotifyRecommendation, UserMood, WeatherData, CalendarBusyness } from '../types';
-import { getSpotifyRecommendations, createPlaylist } from '../utils/spotify';
+import { getSpotifyRecommendations, createSpotifyPlaylist, initiateSpotifyLogin } from '../utils/spotify';
 
 interface PlaylistRecommendationProps {
   mood: UserMood | null;
@@ -18,49 +18,55 @@ export default function PlaylistRecommendation({
   const [recommendation, setRecommendation] = useState<SpotifyRecommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [playlistId, setPlaylistId] = useState<string | null>(null);
 
   useEffect(() => {
     async function generatePlaylist() {
-      if (!mood || !weather || !calendar) return;
+      if (!mood) return;
 
       setLoading(true);
       setError(null);
 
       try {
-        // TODO: Implement proper Spotify authentication
-        const mockAccessToken = 'mock_token';
         const recommendation = await getSpotifyRecommendations(
-          mood,
-          weather,
-          calendar,
-          mockAccessToken
+          mood.text,
+          mood.genres,
+          mood.duration || 30
         );
         setRecommendation(recommendation);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to generate playlist');
+        if (err instanceof Error && err.message.includes('Not authenticated')) {
+          setError('Please log in to Spotify to get recommendations');
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to generate playlist');
+        }
       } finally {
         setLoading(false);
       }
     }
 
     generatePlaylist();
-  }, [mood, weather, calendar]);
+  }, [mood]);
 
   const handleCreatePlaylist = async () => {
-    if (!recommendation) return;
+    if (!recommendation || !mood) return;
 
     try {
-      // TODO: Implement proper Spotify authentication
-      const mockAccessToken = 'mock_token';
-      const mockUserId = 'mock_user_id';
-      const playlistId = await createPlaylist(
-        recommendation.tracks.map(track => ({ uri: track.uri })),
-        mockAccessToken,
-        mockUserId
+      setLoading(true);
+      const id = await createSpotifyPlaylist(
+        recommendation.tracks,
+        mood.text,
+        mood.duration || 30
       );
-      console.log('Playlist created:', playlistId);
+      setPlaylistId(id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create playlist');
+      if (err instanceof Error && err.message.includes('Not authenticated')) {
+        initiateSpotifyLogin();
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to create playlist');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,8 +80,16 @@ export default function PlaylistRecommendation({
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-6 text-center text-red-600">
-        <p>{error}</p>
+      <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+        <p className="text-red-600 mb-4">{error}</p>
+        {error.includes('Please log in') && (
+          <button
+            onClick={initiateSpotifyLogin}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Log in to Spotify
+          </button>
+        )}
       </div>
     );
   }
@@ -93,17 +107,33 @@ export default function PlaylistRecommendation({
             <li key={index} className="bg-gray-50 rounded-lg p-4">
               <div>
                 <p className="font-medium text-gray-900">{track.name}</p>
-                <p className="text-sm text-gray-600">{track.artist}</p>
+                <p className="text-sm text-gray-600">
+                  {track.artist}
+                </p>
               </div>
             </li>
           ))}
         </ul>
-        <button
-          onClick={handleCreatePlaylist}
-          className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-        >
-          Create Playlist on Spotify
-        </button>
+        {playlistId ? (
+          <div className="text-center">
+            <p className="text-green-600 mb-2">Playlist created successfully!</p>
+            <a
+              href={`https://open.spotify.com/playlist/${playlistId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Open in Spotify
+            </a>
+          </div>
+        ) : (
+          <button
+            onClick={handleCreatePlaylist}
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+          >
+            Create Playlist on Spotify
+          </button>
+        )}
       </div>
     </div>
   );

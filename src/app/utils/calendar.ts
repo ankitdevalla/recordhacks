@@ -7,7 +7,20 @@ declare global {
   }
 }
 
+// Add token storage
+let googleAccessToken: string | null = null;
+let googleTokenExpirationTime: number | null = null;
+
 async function getGoogleAccessToken(): Promise<string> {
+  // Check localStorage first
+  const storedToken = localStorage.getItem('google_access_token');
+  const storedExpiry = localStorage.getItem('google_token_expiry');
+  
+  if (storedToken && storedExpiry && Date.now() < parseInt(storedExpiry)) {
+    console.log('Using stored Google access token');
+    return storedToken;
+  }
+
   console.log('Starting OAuth flow...');
   
   if (!window.google) {
@@ -30,6 +43,9 @@ async function getGoogleAccessToken(): Promise<string> {
           }
           if (tokenResponse.access_token) {
             console.log('Access token received successfully');
+            // Store token in localStorage
+            localStorage.setItem('google_access_token', tokenResponse.access_token);
+            localStorage.setItem('google_token_expiry', (Date.now() + (tokenResponse.expires_in * 1000)).toString());
             resolve(tokenResponse.access_token);
           } else {
             console.error('No access token in response');
