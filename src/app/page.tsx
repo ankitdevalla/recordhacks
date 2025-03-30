@@ -72,7 +72,7 @@ export default function Home() {
   return (
     <>
       <AnimatedBackground mood={selectedMood} />
-      <main className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${currentMoodStyle.gradient}`}>
+      <main className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500`}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <h1 className={`text-4xl font-bold mb-8 ${currentMoodStyle.textColor}`}>
